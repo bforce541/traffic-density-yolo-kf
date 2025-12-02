@@ -1,0 +1,25 @@
+# Python venv
+.venv/
+venv/
+ENV/
+
+# MacOS junk
+.DS_Store
+
+# Bytecode
+__pycache__/
+*.pyc
+
+# Video files
+data/*.mp4
+data/*.mov
+data/*.avi
+
+# Results (optional to ignore)
+results/*.csv
+results/figures/
+results/*.png
+
+# YOLO cache
+ultralytics/
+
