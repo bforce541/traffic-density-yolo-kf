@@ -1,0 +1,228 @@
+\documentclass[12pt]{article}
+
+% ---------------------------------------------------------
+% Packages
+% ---------------------------------------------------------
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{url}
+\usepackage{setspace}
+\usepackage{hyperref}
+\usepackage[margin=1in]{geometry}
+\usepackage{float}
+\usepackage{titlesec}
+
+% Cleaner section spacing
+\titlespacing{\section}{0pt}{10pt}{6pt}
+\titlespacing{\subsection}{0pt}{8pt}{4pt}
+
+% Hyperlink colors
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    urlcolor=blue,
+    citecolor=black
+}
+
+\setstretch{1.2}
+
+% ---------------------------------------------------------
+% Title
+% ---------------------------------------------------------
+\title{\textbf{Real-Time Traffic Monitoring Using Deep Learning and Multi-Object Tracking}}
+
+\author{
+\textbf{Yoshua Alexander}\\[2pt]
+Department of Computer Science\\
+The University of Texas at Dallas\\
+Richardson, TX, USA\\
+\texttt{yoshuaalexander0@gmail.com}
+}
+
+\date{}
+
+\begin{document}
+\maketitle
+
+% ---------------------------------------------------------
+% Abstract
+% ---------------------------------------------------------
+\begin{abstract}
+\noindent
+Accurate traffic monitoring traditionally relies on physical sensors such as inductive loops or radar, which are costly to deploy and maintain. This paper presents a lightweight, camera-based alternative using modern computer vision. A YOLOv8 object detector is combined with Kalman filter--based multi-object tracking to estimate vehicle trajectories, frame-level density, and a normalized congestion score from a single fixed camera. Experiments on a two-minute highway video demonstrate that the system produces stable density curves and congestion profiles, suggesting that commodity cameras and deep learning can serve as a practical, scalable alternative to traditional traffic sensors. All code is publicly available at \url{https://github.com/bforce541/traffic-density-yolo-kf}.
+\end{abstract}
+
+% ---------------------------------------------------------
+% Introduction
+% ---------------------------------------------------------
+\section{Introduction}
+Reliable measurements of traffic density and congestion are essential for urban planning, adaptive signal control, and real-time transportation management. Traditional sensing methods---loop detectors, radar, and magnetometers---deliver accurate point measurements but require physical installation and maintenance, resulting in sparse spatial coverage.
+
+Meanwhile, fixed roadside cameras have become widespread. With modern deep learning, these cameras can function as flexible virtual sensors capable of detecting and tracking vehicles in real time. The challenge is converting raw video frames into stable traffic metrics.
+
+This work addresses that challenge by building a full, open-source pipeline that:
+\begin{itemize}
+    \item applies YOLOv8 to detect vehicles frame-by-frame,
+    \item uses Kalman-filter tracking to maintain stable identities,
+    \item computes vehicle counts and a normalized congestion score,
+    \item and visualizes temporal traffic patterns.
+\end{itemize}
+
+The goal is a transparent, reproducible framework showing how computer vision can replace or complement traditional traffic sensors.
+
+% ---------------------------------------------------------
+% Related Work
+% ---------------------------------------------------------
+\section{Related Work}
+Vision-based traffic monitoring has evolved from background subtraction and handcrafted features to deep-learning detectors such as YOLO, SSD, and Faster R-CNN. Detection alone, however, is insufficient: multi-object tracking is needed for stable counts, temporal coherence, and trajectory estimation.
+
+SORT and DeepSORT show that classical Kalman filtering combined with IoU-based association can achieve strong tracking performance when paired with modern detectors. Inspired by these approaches, this work implements a similar, lightweight tracking framework suitable for real-time environments.
+
+% ---------------------------------------------------------
+% Methodology
+% ---------------------------------------------------------
+\section{Methodology}
+
+\subsection{Detection with YOLOv8}
+Each frame of the input video is passed through YOLOv8, which outputs bounding boxes, class labels, and confidence scores. Only vehicle categories are retained. Detections for each frame are saved to CSV for transparency and reproducibility.
+
+\subsection{Tracking with a Kalman Filter}
+Every detection is matched to an existing track or used to initialize a new one. Each track maintains an 8-dimensional state vector:
+\[
+[c_x, c_y, w, h, \dot{c}_x, \dot{c}_y, \dot{w}, \dot{h}]
+\]
+corresponding to bounding box center, dimensions, and velocities.
+
+IoU matching assigns detections to tracks, while unmatched tracks are eventually removed. This process stabilizes the output time series and prevents identity switching or double counting.
+
+\subsection{Traffic Density and Congestion}
+For each frame $t$, the system computes the number of active tracks:
+\[
+N_t = \text{number of tracked vehicles at frame } t.
+\]
+
+To normalize traffic load across arbitrary scenes, we define a congestion metric:
+\[
+C_t = \frac{N_t}{\max_k N_k}.
+\]
+
+This scales congestion to the interval $[0,1]$, enabling comparisons across videos recorded under different conditions or camera perspectives.
+
+Both $N_t$ and $C_t$ are exported to CSV and visualized.
+
+% ---------------------------------------------------------
+% Experimental Setup
+% ---------------------------------------------------------
+\section{Experimental Setup}
+
+\subsection{Data}
+A two-minute highway video recorded from a fixed roadside camera was used for evaluation. The scene contains multiple lanes of bi-directional traffic consisting of cars, SUVs, and trucks.
+
+\subsection{Implementation}
+All code is implemented in Python. YOLOv8 runs through the \texttt{ultralytics} package. Experiments were performed on a Mac laptop without GPU acceleration, demonstrating that the pipeline is lightweight and efficient.
+
+% ---------------------------------------------------------
+% Results
+% ---------------------------------------------------------
+\section{Results}
+
+\subsection{Traffic Density}
+Figure~\ref{fig:vehicle_count} shows the number of tracked vehicles per frame. The curve captures natural fluctuations in traffic flow. The Kalman filter smooths detector noise, producing a realistic density signal.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\linewidth]{vehicle_count.png}
+    \caption{Vehicle count over time, showing fluctuations in traffic density.}
+    \label{fig:vehicle_count}
+\end{figure}
+\newpage
+
+\subsection{Congestion Score}
+Figure~\ref{fig:congestion} presents the normalized congestion score. The metric peaks at 1.0 during the most crowded moments and remains lower during lighter flow. This normalized score supports cross-camera and cross-scene comparisons.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\linewidth]{congestion_score.png}
+    \caption{Normalized congestion score over time.}
+    \label{fig:congestion}
+\end{figure}
+
+% ---------------------------------------------------------
+% Discussion
+% ---------------------------------------------------------
+\section{Discussion}
+Results show that even a short two-minute clip provides sufficient information to reconstruct meaningful traffic behavior. YOLOv8 provides strong detection accuracy, while Kalman-filter tracking stabilizes trajectories and avoids duplicate counts.
+
+The normalized congestion score offers a simple, interpretable way to estimate traffic load using only vision data, without physical sensors.
+
+% ---------------------------------------------------------
+% Limitations and Future Work
+% ---------------------------------------------------------
+\section{Limitations and Future Work}
+Limitations include:
+\begin{itemize}
+    \item evaluation on a single daytime highway scene,
+    \item reduced performance under occlusion or poor lighting,
+    \item reliance on a single fixed camera.
+\end{itemize}
+
+Future work includes:
+\begin{itemize}
+    \item testing across diverse weather and lighting conditions,
+    \item deploying the system on real-time edge devices,
+    \item estimating vehicle speeds and travel-time proxies from trajectories.
+\end{itemize}
+
+% ---------------------------------------------------------
+% Conclusion
+% ---------------------------------------------------------
+\section{Conclusion}
+This work presents a compact computer-vision pipeline for real-time traffic monitoring using only a roadside camera. By combining YOLOv8 with Kalman filter tracking, the system produces stable estimates of vehicle density and congestion. The approach is inexpensive, scalable, and suitable for smart-city applications or transportation research.
+
+% ---------------------------------------------------------
+% References
+% ---------------------------------------------------------
+\begin{thebibliography}{9}
+
+\bibitem{yolov8}
+G. Jocher et al., ``Ultralytics YOLOv8,'' GitHub, 2023. \url{https://github.com/ultralytics/ultralytics}
+
+\bibitem{sort}
+A. Bewley et al., ``Simple Online and Realtime Tracking,'' \textit{Proc. ICIP}, 2016.
+
+\bibitem{deepsort}
+N. Wojke et al., ``Deep Association Metrics for Multi-Object Tracking,'' \textit{Proc. ICIP}, 2017.
+
+\bibitem{traffic}
+A. Jain and A. Sharma, ``Intelligent Traffic Monitoring using Computer Vision,'' \textit{IEEE Trans. ITS}, 2018.
+
+% ---------------- ADDITIONAL REFERENCES BELOW ----------------
+
+\bibitem{yolo_original}
+J. Redmon, S. Divvala, R. Girshick, and A. Farhadi, 
+``You Only Look Once: Unified, Real-Time Object Detection,'' 
+\textit{Proc. CVPR}, 2016.
+
+\bibitem{yolov7}
+W. Wang et al., 
+``YOLOv7: Trainable Bag-of-Freebies Sets New State-of-the-Art for Real-Time Object Detectors,'' 
+arXiv:2207.02696, 2022.
+
+\bibitem{detrac}
+L. Wen et al., 
+``UA-DETRAC: A New Benchmark and Protocol for Object Detection and Tracking,'' 
+\textit{arXiv:1511.04136}, 2016.
+
+\bibitem{kalman_tracking}
+R. E. Kalman, 
+``A New Approach to Linear Filtering and Prediction Problems,'' 
+\textit{ASME Journal of Basic Engineering}, 1960.
+
+\bibitem{cnn_traffic_density}
+V. Chan et al., 
+``Crowd and Traffic Density Estimation Using Deep Convolutional Networks,'' 
+\textit{IEEE International Conference on Intelligent Transportation Systems}, 2019.
+
+\end{thebibliography}
+
+\end{document}
