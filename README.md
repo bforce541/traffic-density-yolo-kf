@@ -62,7 +62,7 @@ This will automatically:
 * Run YOLOv8 detections  
 * Apply Kalman filter tracking  
 * Output vehicle_count.csv and congestion_score.csv into the results/ directory  
-* Generate visual plots into the figures/ directory  
+* Generate visual plots into the results/figures/ directory  
 
 ---
 
@@ -72,13 +72,19 @@ This will automatically:
 
 This plot shows the number of active tracked vehicles at each frame.
 
-(Include vehicle_count.png here if desired.)
+<p align="center">
+  <img src="results/figures/vehicle_count.png" width="75%">
+</p>
+
+---
 
 ### Congestion Score
 
 This plot shows normalized congestion, scaled by the maximum observed vehicle count.
 
-(Include congestion_score.png here if desired.)
+<p align="center">
+  <img src="results/figures/congestion_score.png" width="75%">
+</p>
 
 ---
 
