@@ -1,25 +1,26 @@
-# Python venv
+# venv
 .venv/
 venv/
 ENV/
 
-# MacOS junk
+# junk
 .DS_Store
 
-# Bytecode
+# bytecode
 __pycache__/
 *.pyc
 
-# Video files
+# Video files hidden 
 data/*.mp4
 data/*.mov
 data/*.avi
 
-# Results (optional to ignore)
+# Hide CSV results (keep folder)
 results/*.csv
-results/figures/
-results/*.png
+
+# Show only plot images
+!results/figures/
+!results/figures/*.png
 
 # YOLO cache
 ultralytics/
-
